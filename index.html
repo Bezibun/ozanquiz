@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MathSpace - Enhanced Clean Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+            min-height: 100vh;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .clean-card {
+            background: #ffffff;
+            border-radius: 24px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 10px 15px -3px rgb(0 0 0 / 0.1);
+            border: 1px solid #f1f5f9;
+        }
+
+        .btn-blue {
+            background-color: #2563eb;
+            color: white;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn-blue:hover {
+            background-color: #1d4ed8;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn-blue:active {
+            transform: translateY(0);
+        }
+
+        .image-placeholder {
+            background: #f1f5f9;
+            border: 2px dashed #cbd5e1;
+            border-radius: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .timer-badge {
+            background: #ffffff;
+            color: #2563eb;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-slide {
+            animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* Print optimization */
+        @media print {
+            .no-print { display: none; }
+            body { background: white; padding: 0; }
+            .clean-card { box-shadow: none; border: 1px solid #eee; }
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div id="app" class="max-w-4xl mx-auto">
+        
+        <!-- BAGIAN 1: LOGIN -->
+        <div id="auth-section" class="clean-card p-8 md:p-16 mt-12 text-center animate-slide">
+            <div class="w-24 h-24 bg-blue-50 text-blue-600 rounded-3xl flex items-center justify-center mx-auto mb-8 text-4xl shadow-inner">📐</div>
+            <h1 class="text-4xl font-extrabold mb-3 text-slate-900 tracking-tight">MathSpace</h1>
+            <p class="text-slate-500 mb-10 text-lg">Visualisasi & Latihan Bangun Ruang Sisi Datar</p>
+            
+            <form onsubmit="startGame(event)" class="max-w-sm mx-auto space-y-5">
+                <div class="text-left">
+                    <label class="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Identitas Pemain</label>
+                    <input type="text" id="player-name" required 
+                        class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-slate-700 text-lg" 
+                        placeholder="Masukkan nama Anda...">
+                </div>
+                <button type="submit" class="w-full btn-blue py-5 rounded-2xl font-bold uppercase tracking-widest shadow-lg">Mulai Tantangan</button>
+            </form>
+        </div>
+
+        <!-- OVERLAY TRANSISI LEVEL -->
+        <div id="level-overlay" class="fixed inset-0 z-50 flex items-center justify-center hidden bg-slate-900/40 backdrop-blur-md">
+            <div class="bg-white p-12 rounded-[40px] shadow-2xl text-center transform scale-110 animate-bounce">
+                <div class="text-blue-600 font-black text-2xl uppercase tracking-[0.3em] mb-2">Level</div>
+                <h1 id="overlay-level-text" class="text-8xl font-black text-slate-900">1</h1>
+            </div>
+        </div>
+
+        <!-- BAGIAN 2: PERMAINAN -->
+        <div id="game-section" class="hidden">
+            <div class="flex flex-wrap gap-4 justify-between items-center mb-8">
+                <div class="flex items-center gap-3 bg-white px-5 py-3 rounded-2xl border border-slate-200 shadow-sm">
+                    <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs">👤</div>
+                    <span id="display-name" class="font-bold text-slate-700 tracking-tight">--</span>
+                </div>
+                <div class="flex gap-3">
+                    <div class="timer-badge px-5 py-3 rounded-2xl font-bold flex items-center gap-3">
+                        <span class="animate-pulse">⏱️</span> <span id="timer-display" class="font-mono text-lg">00:00</span>
+                    </div>
+                    <div class="bg-slate-900 text-white px-5 py-3 rounded-2xl font-bold shadow-lg">
+                        <span id="level-label">Level 1</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Kartu Soal -->
+            <div class="clean-card p-6 md:p-12 animate-slide relative">
+                <div class="absolute top-6 right-10 text-slate-300 font-black text-4xl" id="level-progress-bg">01</div>
+                <div class="mb-8">
+                    <span id="question-category" class="bg-blue-600 text-white text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-[0.2em]">Kategori</span>
+                </div>
+                
+                <h2 id="question-text" class="text-2xl md:text-3xl font-bold text-slate-800 mb-10 leading-snug">...</h2>
+                
+                <div class="grid md:grid-cols-2 gap-12 items-center">
+                    <div class="image-placeholder aspect-square flex justify-center items-center p-6 shadow-inner">
+                        <img id="question-image" src="" alt="Visualisasi Soal" class="max-w-full max-h-full object-contain rounded-lg shadow-sm" onerror="this.src='https://placehold.co/600x600/f1f5f9/2563eb?text=MATH+SPACE'">
+                    </div>
+
+                    <div class="flex flex-col justify-center">
+                        <div id="options-container" class="space-y-4">
+                            <!-- MCQ Buttons -->
+                        </div>
+                        
+                        <div id="uraian-container" class="hidden space-y-5">
+                            <textarea id="answer-uraian" 
+                                class="w-full bg-slate-50 border border-slate-200 rounded-2xl p-6 outline-none focus:ring-2 focus:ring-blue-500 h-56 text-slate-700 text-base leading-relaxed resize-none shadow-inner" 
+                                placeholder="Tuliskan cara pengerjaan dan jawaban akhir Anda..."></textarea>
+                            <button onclick="submitUraian()" class="w-full btn-blue py-5 rounded-2xl font-bold uppercase tracking-widest shadow-xl">Kirim Jawaban</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Progress Bar Kecil -->
+                <div class="mt-12 h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                    <div id="progress-bar-fill" class="h-full bg-blue-500 transition-all duration-500" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- BAGIAN 3: REPORT AKHIR -->
+        <div id="result-section" class="hidden animate-slide">
+            <div class="clean-card p-8 md:p-16 text-center relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-3 bg-gradient-to-r from-blue-400 to-blue-700"></div>
+                
+                <h2 class="text-4xl font-black text-slate-900 mb-3">Hasil Akhir Sesi</h2>
+                <p class="text-slate-400 mb-12 text-lg">Laporan performa pengerjaan modul bangun ruang</p>
+
+                <div class="bg-slate-50 rounded-[32px] p-8 md:p-12 mb-10 text-left border border-slate-100 shadow-inner">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-8">
+                        <div>
+                            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">Nama Pemain</p>
+                            <p id="res-name" class="text-2xl font-bold text-slate-800 underline decoration-blue-200 underline-offset-4">--</p>
+                        </div>
+                        <div>
+                            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">Peringkat Capaian</p>
+                            <p id="res-rank" class="text-2xl font-bold text-blue-600">--</p>
+                        </div>
+                        <div>
+                            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">Skor Akurasi</p>
+                            <div class="flex items-baseline gap-2">
+                                <p id="res-score" class="text-5xl font-black text-slate-900">0</p>
+                                <span class="text-slate-400 font-bold">/ 100</span>
+                            </div>
+                        </div>
+                        <div>
+                            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Waktu</p>
+                            <p id="res-time" class="text-4xl font-black text-slate-900">0s</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-6 mt-12">
+                        <div class="bg-white p-6 rounded-2xl border border-green-100 shadow-sm text-center">
+                            <p class="text-[10px] font-bold text-green-500 uppercase tracking-widest mb-1">Benar</p>
+                            <p id="res-correct" class="text-3xl font-black text-green-600">0</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl border border-red-100 shadow-sm text-center">
+                            <p class="text-[10px] font-bold text-red-500 uppercase tracking-widest mb-1">Salah</p>
+                            <p id="res-wrong" class="text-3xl font-black text-red-600">0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="sync-status" class="flex items-center justify-center gap-2 text-sm font-semibold text-slate-400 mb-10 py-3 px-6 bg-slate-50 rounded-full w-fit mx-auto">
+                    <span class="w-2 h-2 bg-slate-300 rounded-full animate-pulse"></span>
+                    <span id="sync-text">Sinkronisasi data ke cloud...</span>
+                </div>
+
+                <div class="flex flex-col md:flex-row gap-5 justify-center no-print">
+                    <button onclick="location.reload()" class="btn-blue px-14 py-5 rounded-2xl font-bold uppercase tracking-widest text-sm shadow-xl">Ulangi Sesi</button>
+                    <button onclick="window.print()" class="bg-slate-100 text-slate-600 px-14 py-5 rounded-2xl font-bold uppercase tracking-widest text-sm hover:bg-slate-200 transition-all">Cetak Laporan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // MASUKKAN URL GOOGLE APPS SCRIPT DI SINI
+        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyWb_IhLB6ZWpae0gOw-mIhXlthM1dfxaYqaO8qzxWY1RqKSEhIfpuhU9-E1rn91QMy/exec"; 
+
+        const questions = [
+            { level: 1, cat: "Kubus", text: "Berapakah jumlah rusuk pada sebuah kubus?", type: "mcq", options: ["8", "10", "12", "14"], correct: "12", image: "" },
+            { level: 1, cat: "Kubus", text: "Jika sebuah kubus memiliki panjang rusuk 5cm, berapakah luas permukaannya?", type: "mcq", options: ["125cm²", "150cm²", "100cm²", "200cm²"], correct: "150cm²", image: "" },
+            { level: 2, cat: "Balok", text: "Sebuah balok memiliki 6 sisi. Manakah pernyataan yang benar?", type: "mcq", options: ["Semua sisi berbentuk persegi", "Sisi yang berhadapan sama luas", "Hanya memiliki 4 titik sudut", "Semua rusuk sama panjang"], correct: "Sisi yang berhadapan sama luas", image: "" },
+            { level: 2, cat: "Balok", text: "Volume balok dengan p=10, l=5, t=4 adalah...", type: "mcq", options: ["100", "150", "200", "250"], correct: "200", image: "" },
+            { level: 3, cat: "Prisma & Limas", text: "Limas segi empat memiliki berapa banyak sisi?", type: "mcq", options: ["4", "5", "6", "8"], correct: "5", image: "" },
+            { level: 3, cat: "Prisma & Limas", text: "Volume prisma segitiga adalah (Luas Alas x Tinggi). Benar atau Salah?", type: "mcq", options: ["Benar", "Salah"], correct: "Benar", image: "" },
+            { level: 4, cat: "Uraian Analisis", text: "Sebuah bak mandi berbentuk kubus dengan rusuk 1 meter. Jika bak mandi tersebut diisi air sebanyak 750 liter, berapa cm lagi sisa ketinggian yang belum terisi air?", type: "uraian", image: "" },
+            { level: 4, cat: "Uraian Analisis", text: "Sebuah tenda berbentuk prisma segitiga dengan panjang 3m dan tinggi segitiga alas 2m (alas segitiga 2m). Berapakah volume udara di dalam tenda tersebut?", type: "uraian", image: "" }
+        ];
+
+        let state = {
+            playerName: '',
+            currentIdx: 0,
+            correctCount: 0,
+            currentLevel: 0,
+            elapsedSeconds: 0,
+            timerInterval: null
+        };
+
+        function startGame(e) {
+            e.preventDefault();
+            const nameInput = document.getElementById('player-name').value.trim();
+            if (nameInput.length < 2) return;
+            
+            state.playerName = nameInput;
+            document.getElementById('display-name').innerText = state.playerName;
+            document.getElementById('auth-section').classList.add('hidden');
+            startTimer();
+            loadQuestion();
+        }
+
+        function startTimer() {
+            if(state.timerInterval) clearInterval(state.timerInterval);
+            state.timerInterval = setInterval(() => {
+                state.elapsedSeconds++;
+                const m = Math.floor(state.elapsedSeconds / 60).toString().padStart(2, '0');
+                const s = (state.elapsedSeconds % 60).toString().padStart(2, '0');
+                document.getElementById('timer-display').innerText = `${m}:${s}`;
+            }, 1000);
+        }
+
+        function loadQuestion() {
+            const q = questions[state.currentIdx];
+            if (!q) return finishGame();
+
+            if (q.level !== state.currentLevel) {
+                state.currentLevel = q.level;
+                showLevelOverlay(q.level);
+                return; 
+            }
+
+            document.getElementById('game-section').classList.remove('hidden');
+            
+            // UI Updates
+            const subIdx = questions.slice(0, state.currentIdx + 1).filter(x => x.level === q.level).length;
+            const levelQs = questions.filter(x => x.level === q.level);
+            
+            document.getElementById('level-label').innerText = `Level ${q.level}`;
+            document.getElementById('level-progress-bg').innerText = subIdx.toString().padStart(2, '0');
+            document.getElementById('question-category').innerText = q.cat;
+            document.getElementById('question-text').innerText = q.text;
+            document.getElementById('question-image').src = q.image || `https://placehold.co/600x600/f1f5f9/2563eb?text=GAMBAR+L${q.level}`;
+            
+            // Progress Bar
+            const totalProgress = ((state.currentIdx) / questions.length) * 100;
+            document.getElementById('progress-bar-fill').style.width = `${totalProgress}%`;
+
+            const optBox = document.getElementById('options-container');
+            const uraianBox = document.getElementById('uraian-container');
+
+            if (q.type === 'mcq') {
+                optBox.classList.remove('hidden');
+                uraianBox.classList.add('hidden');
+                optBox.innerHTML = '';
+                q.options.forEach(opt => {
+                    const btn = document.createElement('button');
+                    btn.className = "w-full text-left px-7 py-5 rounded-2xl bg-white border-2 border-slate-100 hover:border-blue-500 hover:bg-blue-50 transition-all font-semibold text-slate-700 shadow-sm flex justify-between items-center group";
+                    btn.innerHTML = `<span>${opt}</span><span class="opacity-0 group-hover:opacity-100 transition-opacity text-blue-500">➜</span>`;
+                    btn.onclick = () => handleMcq(opt);
+                    optBox.appendChild(btn);
+                });
+            } else {
+                optBox.classList.add('hidden');
+                uraianBox.classList.remove('hidden');
+                document.getElementById('answer-uraian').value = '';
+                document.getElementById('answer-uraian').focus();
+            }
+        }
+
+        function showLevelOverlay(lvl) {
+            const overlay = document.getElementById('level-overlay');
+            document.getElementById('overlay-level-text').innerText = lvl;
+            overlay.classList.remove('hidden');
+            document.getElementById('game-section').classList.add('hidden');
+            
+            setTimeout(() => {
+                overlay.classList.add('hidden');
+                loadQuestion();
+            }, 1600);
+        }
+
+        function handleMcq(choice) {
+            const q = questions[state.currentIdx];
+            if (choice === q.correct) state.correctCount++;
+            nextStep();
+        }
+
+        function submitUraian() {
+            const val = document.getElementById('answer-uraian').value.trim();
+            if (val.length < 3) return; 
+            state.correctCount++; // Simulasi poin uraian
+            nextStep();
+        }
+
+        function nextStep() {
+            state.currentIdx++;
+            loadQuestion();
+        }
+
+        async function finishGame() {
+            clearInterval(state.timerInterval);
+            document.getElementById('game-section').classList.add('hidden');
+            document.getElementById('result-section').classList.remove('hidden');
+            
+            const score = Math.round((state.correctCount / questions.length) * 100);
+            const m = Math.floor(state.elapsedSeconds / 60);
+            const s = state.elapsedSeconds % 60;
+            const timeStr = `${m}m ${s}s`;
+
+            let rank = "Pemula";
+            if (score >= 90) rank = "Master Geometri";
+            else if (score >= 70) rank = "Arsitek Muda";
+            else if (score >= 50) rank = "Pelajar Giat";
+
+            document.getElementById('res-name').innerText = state.playerName;
+            document.getElementById('res-rank').innerText = rank;
+            document.getElementById('res-score').innerText = score;
+            document.getElementById('res-time').innerText = timeStr;
+            document.getElementById('res-correct').innerText = state.correctCount;
+            document.getElementById('res-wrong').innerText = questions.length - state.correctCount;
+
+            const reportData = {
+                nama: state.playerName,
+                skor: score,
+                benar: state.correctCount,
+                salah: questions.length - state.correctCount,
+                waktu: timeStr,
+                rank: rank,
+                tanggal: new Date().toLocaleString('id-ID')
+            };
+
+            if (APPS_SCRIPT_URL) {
+                const statusText = document.getElementById('sync-text');
+                try {
+                    await fetch(APPS_SCRIPT_URL, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        cache: 'no-cache',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(reportData)
+                    });
+                    statusText.innerText = "Laporan berhasil dicadangkan ke Cloud";
+                    document.getElementById('sync-status').classList.add('text-green-600', 'bg-green-50');
+                } catch (e) {
+                    statusText.innerText = "Koneksi cloud terputus. Simpan PDF saja.";
+                }
+            }
+        }
+    </script>
+</body>
+</html>
